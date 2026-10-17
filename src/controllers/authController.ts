@@ -17,6 +17,21 @@ export function createAuthController(authService: AuthService) {
     res.status(200).json(result);
   });
 
+  const refresh = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token is required" });
+    }
+    const result = await authService.refresh(refreshToken);
+    res.status(200).json(result);
+  });
+
+  const logout = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+    authService.logout(req.auth!, refreshToken);
+    res.status(200).json({ message: "Sesión cerrada" });
+  });
+
   const me = asyncHandler(async (req: Request, res: Response) => {
     const auth = req.auth!;
     res.json({
