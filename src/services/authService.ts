@@ -7,10 +7,20 @@ import { conflict, unauthorized } from "../errors/httpError";
 import type { UserRepository } from "../repositories/userRepository";
 import type { TokenRepository } from "../repositories/tokenRepository";
 import type { StudentRepository } from "../repositories/studentRepository";
+import { access } from "node:fs";
+import { number } from "zod";
+import { RefreshTokenRecord } from "../repositories/refreshTokenRepository";
+
 
 export interface PublicUser {
   id: number;
-  email: string;
+  email: string
+}
+
+export interface AuthToken {
+  access_token: string;
+  refreshToken: string;
+  expirensIn: number
 }
 
 export interface StudentProfileClaims {
@@ -36,6 +46,7 @@ export class AuthService {
     private readonly users: UserRepository,
     private readonly tokens: TokenRepository,
     private readonly students: StudentRepository,
+    private readonly refreshTokens: RefreshTokenRecord
   ) {}
 
   async register(email: string, password: string): Promise<PublicUser> {
@@ -50,7 +61,7 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-  ): Promise<{ token: string; user: PublicUser }> {
+  ): Promise<{ accessToken: string; refreshToken: string; user: PublicUser }> {
     // Se puede iniciar sesión con una cuenta de usuario (registro) o con
     // las credenciales de un estudiante (email + password).
     const user = this.users.findByEmail(email);

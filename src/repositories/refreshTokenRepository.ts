@@ -56,4 +56,18 @@ export class RefreshTokenRepository {
         return result.changes;
     }
 
+    isvalid(token: string): { valid: boolean; userId?: number; userKind?: "user" | "student" } {
+        const record = this.findByToken(token);
+        if (!record) {
+            return { valid: false };
+        }
+        const now = Math.floor(Date.now() / 1000);
+        if (record.expires_at < now) {
+            this.delete(token);
+            return { valid: false };
+        }
+
+        return { valid: true, userId: record.user_id, userKind: record.user_kind };
+    }
+
 } 
