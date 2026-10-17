@@ -37,6 +37,12 @@ export class RefreshTokenRepository {
         return result.changes > 0;
     }
 
+    findByToken(token: string): RefreshTokenRecord | undefined {
+        const stmt = this.db.prepare("SELECT * FROM refresh_tokens WHERE token = ?");
+        const row = stmt.get(token);
+        return row as RefreshTokenRecord | undefined;
+    }
+
     deleteByUser(userId: number, userKind: "user" | "student"): number {
         const stmt = this.db.prepare("DELETE FROM refresh_tokens WHERE user_id = ? AND user_kind = ?");
         const result = stmt.run(userId, userKind);
