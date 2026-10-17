@@ -26,4 +26,12 @@ export class RefreshTokenRepository {
         return result.changes > 0;
     }
 
+    deleteExpired(): number {
+        const now = Math.floor(Date.now() / 1000);
+        const stmt = this.db.prepare("DELETE FROM refresh_tokens WHERE expires_at < ?");
+        const result = stmt.run(now);
+        return result.changes;
+    }
+
+
 } 
