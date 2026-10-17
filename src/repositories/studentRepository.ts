@@ -22,10 +22,12 @@ export interface StudentInput {
   passwordHash: string;
 }
 
+
 export function toPublicStudent(row: StudentRow): PublicStudent {
   const { password_hash: _omit, ...rest } = row;
   return rest;
 }
+
 
 export class StudentRepository {
   constructor(private readonly db: AppDatabase) {}

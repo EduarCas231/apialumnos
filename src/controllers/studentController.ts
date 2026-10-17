@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { parseBody } from "../middleware/validate";
-import { badRequest, notFound } from "../errors/httpError";
+import { badRequest, notFound, unauthorized } from "../errors/httpError";
 import { studentSchema } from "../schemas/schemas";
 import {
   toPublicStudent,
@@ -35,11 +35,37 @@ export function createStudentController(students: StudentRepository) {
   const list = asyncHandler(async (_req: Request, res: Response) => {
     res.json({ data: students.findAll().map(toPublicStudent) });
   });
-
+  
   const getOne = asyncHandler(async (req: Request, res: Response) => {
     const id = parseId(req.params.id);
     const student = students.findById(id);
     if (!student) throw notFound("Estudiante no encontrado");
+    res.json({ data: toPublicStudent(student) });
+  });
+
+  const getMe = asyncHandler(async (req: Request, res: Response) => {
+    const auth = req.auth;
+    if (!auth) throw unauthorized();
+
+    if (auth.kind === "student") {
+      if (!auth.profile) {
+        throw unauthorized("El token no contiene un perfil de estudiante");
+      }
+
+      res.json({
+        data: {
+          id: Number(auth.sub),
+          email: auth.email,
+          ...auth.profile,
+        },
+      });
+      return;
+    }
+
+    const student = students.findByEmail(auth.email);
+    if (!student) {
+      throw notFound("No hay un estudiante asociado al correo del token");
+    }
     res.json({ data: toPublicStudent(student) });
   });
 
@@ -62,5 +88,5 @@ export function createStudentController(students: StudentRepository) {
     res.status(204).send();
   });
 
-  return { list, getOne, create, update, remove };
+  return { list, getOne, getMe, create, update, remove };
 }

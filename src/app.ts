@@ -9,11 +9,9 @@ import { AuthService } from "./services/authService";
 import { createAuthRouter } from "./routes/authRoutes";
 import { createStudentRouter } from "./routes/studentRoutes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import cors from 'cors';
 
-/**
- * Construye la aplicación Express con todas las dependencias inyectadas
- * a partir de una base de datos. Permite crear apps aisladas en pruebas.
- */
+
 export function createApp(db: AppDatabase): Express {
   const users = new UserRepository(db);
   const students = new StudentRepository(db);
@@ -22,6 +20,12 @@ export function createApp(db: AppDatabase): Express {
 
   const app = express();
   app.use(express.json());
+
+  app.use(cors({
+    origin: "http://localhost:8081",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }))
 
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
@@ -36,6 +40,7 @@ export function createApp(db: AppDatabase): Express {
     swaggerUi.serve,
     swaggerUi.setup(openapiSpec, {
       customSiteTitle: "API de Estudiantes — Documentación",
+      swaggerOptions: { persistAuthorization: true },
     }),
   );
 

@@ -48,6 +48,29 @@ describe("Autenticación", () => {
     expect(res.body.token).toBeTypeOf("string");
   });
 
+  it("obtiene la identidad de la cuenta desde los claims del token", async () => {
+    const token = await (async () => {
+      await request(app)
+        .post("/api/auth/register")
+        .send({ email: "claims@test.com", password: "secret123" });
+      const login = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "claims@test.com", password: "secret123" });
+      return login.body.token as string;
+    })();
+
+    const res = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({
+      email: "claims@test.com",
+      kind: "user",
+    });
+    expect(res.body.user.id).toBeTypeOf("number");
+  });
+
   it("rechaza credenciales incorrectas (401)", async () => {
     await request(app)
       .post("/api/auth/register")

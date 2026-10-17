@@ -13,9 +13,19 @@ export interface PublicUser {
   email: string;
 }
 
+export interface StudentProfileClaims {
+  nombre: string;
+  apellido: string;
+  matricula: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TokenPayload {
   sub: string;
   email: string;
+  kind: "user" | "student";
+  profile?: StudentProfileClaims;
   jti: string;
   exp: number;
   iat: number;
@@ -46,13 +56,25 @@ export class AuthService {
     const user = this.users.findByEmail(email);
     const student = user ? undefined : this.students.findByEmail(email);
     const account = user
-      ? { id: user.id, email: user.email, hash: user.password_hash, kind: "user" }
+      ? {
+          id: user.id,
+          email: user.email,
+          hash: user.password_hash,
+          kind: "user" as const,
+        }
       : student
         ? {
             id: student.id,
             email: student.email,
             hash: student.password_hash,
-            kind: "student",
+            kind: "student" as const,
+            profile: {
+              nombre: student.nombre,
+              apellido: student.apellido,
+              matricula: student.matricula,
+              created_at: student.created_at,
+              updated_at: student.updated_at,
+            },
           }
         : undefined;
 
@@ -68,7 +90,12 @@ export class AuthService {
       jwtid: randomUUID(),
     };
     const token = jwt.sign(
-      { sub: String(account.id), email: account.email, kind: account.kind },
+      {
+        sub: String(account.id),
+        email: account.email,
+        kind: account.kind,
+        ...(account.kind === "student" ? { profile: account.profile } : {}),
+      },
       config.jwtSecret,
       options,
     );

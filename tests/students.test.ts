@@ -66,6 +66,48 @@ describe("CRUD de estudiantes (protegido)", () => {
     expect(missing.status).toBe(404);
   });
 
+  it("obtiene el perfil desde los claims sin enviar un id", async () => {
+    const created = await auth(request(app).post("/api/students")).send(sample);
+    const id = created.body.data.id as number;
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ email: sample.email, password: sample.password });
+    const studentToken = login.body.token as string;
+
+    const me = await request(app)
+      .get("/api/students/me")
+      .set("Authorization", `Bearer ${studentToken}`);
+    expect(me.status).toBe(200);
+    expect(me.body.data).toMatchObject({
+      id,
+      nombre: sample.nombre,
+      apellido: sample.apellido,
+      matricula: sample.matricula,
+      email: sample.email,
+    });
+    expect(me.body.data.password_hash).toBeUndefined();
+  });
+
+  it("permite que el token de usuario encuentre al estudiante por correo", async () => {
+    const created = await auth(request(app).post("/api/students")).send(sample);
+    const id = created.body.data.id as number;
+    const userToken = await authenticate(app, sample.email, "accountpass123");
+
+    const response = await request(app)
+      .get("/api/students/me")
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      id,
+      nombre: sample.nombre,
+      apellido: sample.apellido,
+      matricula: sample.matricula,
+      email: sample.email,
+    });
+    expect(response.body.data.password_hash).toBeUndefined();
+  });
+
   it("actualiza un estudiante (200)", async () => {
     const created = await auth(request(app).post("/api/students")).send(sample);
     const id = created.body.data.id as number;

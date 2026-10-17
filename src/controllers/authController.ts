@@ -17,11 +17,23 @@ export function createAuthController(authService: AuthService) {
     res.status(200).json(result);
   });
 
+  const me = asyncHandler(async (req: Request, res: Response) => {
+    const auth = req.auth!;
+    res.json({
+      user: {
+        id: Number(auth.sub),
+        email: auth.email,
+        kind: auth.kind,
+        ...auth.profile,
+      },
+    });
+  });
+
   const logout = asyncHandler(async (req: Request, res: Response) => {
     // req.auth lo garantiza requireAuth
     authService.logout(req.auth!);
     res.status(200).json({ message: "Sesión cerrada" });
   });
 
-  return { register, login, logout };
+  return { register, login, me, logout };
 }

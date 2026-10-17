@@ -9,7 +9,9 @@ export const openapiSpec = {
     version: "1.0.0",
     description:
       "API local para administrar estudiantes (CRUD) con autenticación JWT " +
-      "(registro, login, logout). Los endpoints de estudiantes están protegidos.",
+      "(registro, login, consulta del usuario autenticado y logout). Para usar " +
+      "las rutas protegidas, inicia sesión en `POST /api/auth/login`, copia el " +
+      "valor de `token` y pégalo en **Authorize**; Swagger UI agrega el prefijo Bearer.",
   },
   servers: [{ url: "http://localhost:3000", description: "Servidor local" }],
   tags: [
@@ -23,7 +25,8 @@ export const openapiSpec = {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "Envía el token como `Authorization: Bearer <token>`",
+        description:
+          "Pega aquí el JWT obtenido del login. Swagger UI lo enviará como `Authorization: Bearer <token>`.",
       },
     },
     schemas: {
@@ -40,6 +43,22 @@ export const openapiSpec = {
         properties: {
           id: { type: "integer", example: 1 },
           email: { type: "string", format: "email", example: "ana@test.com" },
+        },
+      },
+      AuthenticatedUser: {
+        type: "object",
+        description:
+          "Identidad tomada de los claims del token. Los campos de perfil " +
+          "solo se incluyen cuando el token pertenece a un estudiante.",
+        properties: {
+          id: { type: "integer", example: 1 },
+          email: { type: "string", format: "email", example: "ana@test.com" },
+          kind: { type: "string", enum: ["user", "student"], example: "student" },
+          nombre: { type: "string", example: "Juan" },
+          apellido: { type: "string", example: "Pérez" },
+          matricula: { type: "string", example: "A001" },
+          created_at: { type: "string", example: "2026-09-22 12:00:00" },
+          updated_at: { type: "string", example: "2026-09-22 12:00:00" },
         },
       },
       LoginResponse: {
@@ -161,6 +180,31 @@ export const openapiSpec = {
             },
           },
           "401": { description: "Credenciales inválidas", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+        },
+      },
+    },
+    "/api/auth/me": {
+      get: {
+        tags: ["Auth"],
+        summary: "Consultar la identidad del token actual",
+        description:
+          "Devuelve los claims del token validado. No consulta de nuevo la base de datos.",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          "200": {
+            description: "Identidad autenticada",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    user: { $ref: "#/components/schemas/AuthenticatedUser" },
+                  },
+                },
+              },
+            },
+          },
+          "401": { description: "Token ausente, inválido o expirado", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
     },
@@ -298,6 +342,30 @@ export const openapiSpec = {
           "204": { description: "Eliminado (sin contenido)" },
           "401": { description: "No autenticado", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
           "404": { description: "No encontrado", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+        },
+      },
+    },
+    "/api/students/me": {
+      get: {
+        tags: ["Estudiantes"],
+        summary: "Consultar un estudiante con el token actual",
+        description:
+          "No requiere parámetros. Con un token de estudiante, el perfil se obtiene de sus claims. Con un token de usuario, se busca el estudiante asociado al correo incluido en el token.",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          "200": {
+            description: "Perfil del estudiante",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { data: { $ref: "#/components/schemas/Student" } },
+                },
+              },
+            },
+          },
+          "401": { description: "Token ausente, inválido o sin perfil de estudiante", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          "404": { description: "No existe un estudiante asociado al token", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
     },
