@@ -22,6 +22,11 @@ export class RefreshTokenRepository {
         const token = randomUUID();
         const now = Math.floor(Date.now() / 1000);
         const expiresAt = now + expiresInSeconds;
+        
+        const stmt = this.db.prepare(
+            "INSERT INTO refresh_tokens (user_id, user_kind, token, expires_at, created_at) VALUES (?, ?, ?, ?, ?)"
+        );
+        stmt.run(userId, userKind, token, expiresAt, now);
 
         return { token, expiresAt };
     }
