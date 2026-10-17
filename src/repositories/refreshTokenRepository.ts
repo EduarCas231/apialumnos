@@ -14,6 +14,18 @@ export class RefreshTokenRepository {
     constructor(private readonly db: DatabaseSync) {
     }
 
+    create(
+        userId:number,
+        userKind: "user" | "student",
+        expiresInSeconds: number
+    ): { token: string; expiresAt: number } {
+        const token = randomUUID();
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = now + expiresInSeconds;
+
+        return { token, expiresAt };
+    }
+
     delete(token: string): boolean {
         const stmt = this.db.prepare("DELETE FROM refresh_tokens WHERE token = ?");
         const result = stmt.run(token);
@@ -32,6 +44,5 @@ export class RefreshTokenRepository {
         const result = stmt.run(now);
         return result.changes;
     }
-
 
 } 
